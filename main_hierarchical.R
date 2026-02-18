@@ -62,3 +62,46 @@ print(p)
 
 # 5. 논문용 고해상도 이미지 저장 (PDF나 TIFF 추천)
 # ggsave("figure_pedicle_width_prediction.pdf", plot = p, width = 8, height = 10, units = "in", dpi = 300)
+
+
+# 민감도 분석용 R 코드
+# 1. 두 가지 시나리오 설정
+# Case 1: 기존 설정 (평균 5, 표준편차 3)
+# Case 2: 느슨한 설정 (평균 5, 표준편차 10) - 데이터의 영향력을 더 크게 만듦
+
+# Case 1 실행
+fit_orig <- stan(
+  file = "hierarchical_pedicle_width.stan",
+  data = stan_data, # 기존 레시피 코드의 데이터
+  iter = 2000, chains = 4, seed = 42
+)
+
+# Case 2를 위해 데이터 리스트의 사전분포 파라미터만 수정 (Stan 파일 내에서 변수화했을 경우)
+# 만약 Stan 파일에 숫자를 직접 적으셨다면, Stan 파일을 복사해 숫자를 수정 후 실행해야 합니다.
+# 여기서는 시각적 비교를 위해 fit_orig와 fit_weak(가칭)가 있다고 가정합니다.
+
+# 2. 결과 추출 및 비교 데이터프레임 생성
+library(dplyr)
+library(tidyr)
+
+# 주요 모수(mu[1,1] ~ mu[9,2])의 평균값 추출 예시
+summ_orig <- as.data.frame(summary(fit_orig, pars = "mu")$summary) %>% 
+  mutate(Parameter = rownames(.), Model = "Informative (SD=3)")
+
+# (동일한 방식으로 fit_weak에서도 추출)
+# summ_weak <- as.data.frame(summary(fit_weak, pars = "mu")$summary) %>% 
+#   mutate(Parameter = rownames(.), Model = "Weakly Informative (SD=10)")
+
+# 3. 시각적 비교 (Posterior Overlay)
+library(bayesplot)
+
+# 특정 레벨(예: T1)의 사후분포가 사전분포 변경에 따라 얼마나 변하는지 확인
+posterior_orig <- as.matrix(fit_orig, pars = "mu[1,1]")
+# posterior_weak <- as.matrix(fit_weak, pars = "mu[1,1]")
+
+# 두 분포를 겹쳐서 그리기
+# m_list <- list(Informative = posterior_orig, Weakly_Informative = posterior_weak)
+# ppc_dens_overlay(y = as.vector(posterior_orig), yrep = posterior_weak[1:100, ]) +
+#   labs(title = "Sensitivity Analysis: Posterior of mu[1,1]")
+
+
