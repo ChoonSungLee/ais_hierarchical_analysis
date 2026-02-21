@@ -15,14 +15,20 @@ parameters {
   real<lower=0> sigma_obs;       // 관측 오차 (Residual)
   
   // 계층적 구조를 위한 파라미터
-  vector[N_patient] patient_effect_raw; // 비중심화 파라미터화용
+  vector[N_patient] patient_effect_raw; // non-centered parametrization
   real<lower=0> sigma_patient;          // 환자 간 편차 (초모수)
 }
 
 transformed parameters {
-  // 환자별 랜덤 효과 계산 (평균 0, 표준편차 sigma_patient인 분포를 따름)
   vector[N_patient] patient_effect;
-  patient_effect = patient_effect_raw * sigma_patient;
+  vector[N] mu_patient; // 관측치별 평균값(mu_patient)을 위한 벡터
+
+  patient_effect = patient_effect_raw * sigma_patient; 
+
+  // 각 관측치(n)에 대해 해부학적 평균과 환자 특성을 합산
+  for (n in 1:N) {
+    mu_patient[n] = mu[level_id[n], side_id[n]] + patient_effect[patient_id[n]];
+  }
 }
 
 model {

@@ -1,12 +1,15 @@
+
+source("data_hierarchical.R")
+
 library(rstan)
 library(bayesplot)  # 시각화 패키지 추가
-library(ggplot2)    # 베이즈플롯은 ggplot2 기반이므로 함께 로드하면 좋습니다.
+library(ggplot2)    # 베이즈플롯은 ggplot2 기반
 
-# 병렬 처리 설정 [cite: 783]
+# 병렬 처리 설정 
 options(mc.cores = parallel::detectCores())
 rstan_options(auto_write = TRUE)
 
-# 모델 적합 [cite: 592, 1009]
+# 모델 적합 
 fit_pedicle <- stan(
   file = "hierarchical_pedicle_width.stan", 
   data = stan_data,
@@ -16,7 +19,7 @@ fit_pedicle <- stan(
   seed = 42
 )
 
-# 결과 확인 [cite: 607, 1012]
+# 결과 확인 
 print(fit_pedicle, pars = c("mu", "sigma_obs", "sigma_patient"))
 
 # 1. GQB에서 만든 width_rep(복제 데이터) 추출
@@ -24,17 +27,17 @@ posterior_samples <- as.matrix(fit_pedicle)
 width_rep_samples <- posterior_samples[, grepl("width_rep", colnames(posterior_samples))]
 
 # 2. 사후예측검증(PPC) 시각화
-# 실제 데이터(stan_data$width)와 모델이 예측한 분포를 비교합니다.
+# 실제 데이터(stan_data$width)와 모델이 예측한 분포를 비교
 ppc_dens_overlay(y = stan_data$width, yrep = width_rep_samples[1:100, ])
 
 # 2. GQB 결과물 추출
 # width_new_patient: 새로운 환자의 [레벨, 측면]별 예측 사후분포
-# Stan 결과에서 해당 모수만 추출합니다.
+# Stan 결과에서 해당 모수만 추출
 post_pred_matrix <- as.matrix(fit_pedicle, pars = "width_new_patient")
 
 # 3. 데이터 구조 정리 (T1~T9 레벨별 시각화를 위해)
-# 예: T1-Lt, T1-Rt 등을 하나의 레벨(T1)로 묶거나 각각 표시할 수 있습니다.
-# 여기서는 '레벨'의 차이를 보여주는 데 집중합니다.
+# 예: T1-Lt, T1-Rt 등을 하나의 레벨(T1)로 묶거나 각각 표시할 수 있음.
+# 여기서는 '레벨'의 차이를 보여주는 데 집중함.
 
 # bayesplot의 mcmc_areas 함수 사용: 사후분포의 밀도와 신용구간을 동시에 보여줌
 p <- mcmc_areas(
@@ -67,7 +70,7 @@ print(p)
 # 민감도 분석용 R 코드
 # 1. 두 가지 시나리오 설정
 # Case 1: 기존 설정 (평균 5, 표준편차 3)
-# Case 2: 느슨한 설정 (평균 5, 표준편차 10) - 데이터의 영향력을 더 크게 만듦
+# Case 2: 느슨한 설정 (평균 5, 표준편차 10) - 데이터의 영향력을 더 크게 만듬
 
 # Case 1 실행
 fit_orig <- stan(
@@ -77,8 +80,8 @@ fit_orig <- stan(
 )
 
 # Case 2를 위해 데이터 리스트의 사전분포 파라미터만 수정 (Stan 파일 내에서 변수화했을 경우)
-# 만약 Stan 파일에 숫자를 직접 적으셨다면, Stan 파일을 복사해 숫자를 수정 후 실행해야 합니다.
-# 여기서는 시각적 비교를 위해 fit_orig와 fit_weak(가칭)가 있다고 가정합니다.
+# 만약 Stan 파일에 숫자를 직접 적으셨다면, Stan 파일을 복사해 숫자를 수정 후 실행해야 함.
+# 여기서는 시각적 비교를 위해 fit_orig와 fit_weak(가칭)가 있다고 가정함.
 
 # 2. 결과 추출 및 비교 데이터프레임 생성
 library(dplyr)
